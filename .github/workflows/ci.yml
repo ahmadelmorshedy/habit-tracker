@@ -1,0 +1,41 @@
+# Builds the project on GitHub's machines every time anything is pushed.
+#
+# The point is not that the build passes here — it passes on my laptop too.
+# The point is that it passes somewhere that has none of my local setup: no
+# node_modules I forgot I installed, no environment variable only I have, no
+# file I created and never committed. If it builds here, it builds for anyone
+# who clones it.
+name: CI
+
+on:
+  push:
+  # Also on pull requests, so a branch is checked before it is merged rather
+  # than after.
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Without this the machine is empty — the repository has to be copied
+      # onto it first.
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          # Restores ~/.npm between runs, which makes the install much faster.
+          cache: npm
+
+      # `npm ci` rather than `npm install`: it installs exactly what
+      # package-lock.json specifies and fails if the lock file disagrees with
+      # package.json. An install that quietly resolves different versions than
+      # the ones I tested is not a check of anything.
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
